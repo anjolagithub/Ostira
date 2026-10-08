@@ -1,9 +1,9 @@
 {
   "cluster": "https://api.devnet.solana.com",
   "solanaCore": "4.4.0-beta.0",
-  "ranAt": "2026-10-08T10:40:51.132Z",
+  "ranAt": "2026-10-08T11:07:08.806Z",
   "mode": "observe",
-  "agent": "7rmanbvrUpkvoLR18vyWYnn4uM8qX13SfEiPdZr6oF39",
+  "agent": "5ps1QQxYRxfwzqH4cyBc7nMem9opxM2qsnBifb3mRtrh",
   "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
   "passed": 9,
   "total": 9,
@@ -13,8 +13,8 @@
       "expected": "ALLOW",
       "decision": "ALLOW",
       "codes": [],
-      "slot": "508789584",
-      "ms": 180,
+      "slot": "508796220",
+      "ms": 56,
       "pass": true,
       "cpi": 4
     },
@@ -26,8 +26,8 @@
         "UNDECLARED_APPROVAL",
         "UNLIMITED_APPROVAL"
       ],
-      "slot": "508789647",
-      "ms": 14651,
+      "slot": "508796221",
+      "ms": 52,
       "pass": true,
       "cpi": 4
     },
@@ -39,8 +39,8 @@
         "UNEXPECTED_ASSET_OUTFLOW",
         "UNEXPECTED_RECIPIENT"
       ],
-      "slot": "508789648",
-      "ms": 174,
+      "slot": "508796221",
+      "ms": 49,
       "pass": true,
       "cpi": 4
     },
@@ -51,8 +51,8 @@
       "codes": [
         "AMOUNT_MISMATCH"
       ],
-      "slot": "508789649",
-      "ms": 176,
+      "slot": "508796281",
+      "ms": 14181,
       "pass": true,
       "cpi": 4
     },
@@ -63,8 +63,8 @@
       "codes": [
         "AUTHORITY_CHANGE"
       ],
-      "slot": "508789649",
-      "ms": 177,
+      "slot": "508796281",
+      "ms": 48,
       "pass": true,
       "cpi": 4
     },
@@ -76,8 +76,8 @@
         "SOL_SPEND_EXCEEDS_CAP",
         "UNEXPECTED_SOL_TRANSFER"
       ],
-      "slot": "508789651",
-      "ms": 175,
+      "slot": "508796281",
+      "ms": 47,
       "pass": true,
       "cpi": 4
     },
@@ -89,7 +89,7 @@
         "UNSUPPORTED_PROGRAM"
       ],
       "slot": null,
-      "ms": 43,
+      "ms": 12,
       "pass": true
     },
     {
@@ -100,8 +100,8 @@
         "NEW_RECIPIENT",
         "AMOUNT_ABOVE_REVIEW_THRESHOLD"
       ],
-      "slot": "508789652",
-      "ms": 2354,
+      "slot": "508796281",
+      "ms": 48,
       "pass": true,
       "cpi": 4
     },
@@ -110,8 +110,8 @@
       "expected": "ALLOW",
       "decision": "ALLOW",
       "codes": [],
-      "slot": "508789675",
-      "ms": 3176,
+      "slot": "508796281",
+      "ms": 48,
       "pass": true,
       "cpi": 0
     }
