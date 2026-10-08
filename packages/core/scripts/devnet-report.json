@@ -1,10 +1,10 @@
 {
   "cluster": "http://127.0.0.1:8899",
   "solanaCore": "2.2.20",
-  "ranAt": "2026-10-08T10:29:15.986Z",
+  "ranAt": "2026-10-08T10:33:14.810Z",
   "mode": "full",
-  "agent": "3a2B5gatywBkJ8kEMR6Gu2e3oLAuuEbdp9RY9PmByBAJ",
-  "mint": "5LSAXnoArAReAAQqLPxeBpJirWcJiP6cPmRqKgPz1cRT",
+  "agent": "5Y9W6w97ypUjtCNWidxYru9FmRdCjTevM5qbrCrgjGXE",
+  "mint": "C8kBNNRbMaurTwcn4uuFXEovCSpD3uU81hM1LGD1TJtE",
   "passed": 10,
   "total": 10,
   "results": [
@@ -13,8 +13,8 @@
       "expected": "ALLOW",
       "decision": "ALLOW",
       "codes": [],
-      "slot": "2660",
-      "ms": 18,
+      "slot": "3240",
+      "ms": 16,
       "pass": true,
       "cpi": 0
     },
@@ -26,7 +26,7 @@
         "UNDECLARED_APPROVAL",
         "UNLIMITED_APPROVAL"
       ],
-      "slot": "2660",
+      "slot": "3240",
       "ms": 8,
       "pass": true,
       "cpi": 0
@@ -39,8 +39,8 @@
         "UNEXPECTED_ASSET_OUTFLOW",
         "UNEXPECTED_RECIPIENT"
       ],
-      "slot": "2660",
-      "ms": 12,
+      "slot": "3240",
+      "ms": 11,
       "pass": true,
       "cpi": 0
     },
@@ -51,8 +51,8 @@
       "codes": [
         "AMOUNT_MISMATCH"
       ],
-      "slot": "2660",
-      "ms": 11,
+      "slot": "3240",
+      "ms": 9,
       "pass": true,
       "cpi": 0
     },
@@ -63,21 +63,21 @@
       "codes": [
         "AUTHORITY_CHANGE"
       ],
-      "slot": "2660",
-      "ms": 9,
+      "slot": "3240",
+      "ms": 7,
       "pass": true,
       "cpi": 0
     },
     {
-      "name": "+ 0.1 SOL drain",
+      "name": "+ 0.02 SOL drain",
       "expected": "BLOCK UNEXPECTED_SOL_TRANSFER",
       "decision": "BLOCK",
       "codes": [
         "SOL_SPEND_EXCEEDS_CAP",
         "UNEXPECTED_SOL_TRANSFER"
       ],
-      "slot": "2660",
-      "ms": 13,
+      "slot": "3240",
+      "ms": 10,
       "pass": true,
       "cpi": 0
     },
@@ -89,7 +89,7 @@
         "UNEXPECTED_RECIPIENT",
         "SUPPLY_CHANGE"
       ],
-      "slot": "2660",
+      "slot": "3240",
       "ms": 8,
       "pass": true,
       "cpi": 0
@@ -113,8 +113,8 @@
         "NEW_RECIPIENT",
         "AMOUNT_ABOVE_REVIEW_THRESHOLD"
       ],
-      "slot": "2660",
-      "ms": 9,
+      "slot": "3240",
+      "ms": 10,
       "pass": true,
       "cpi": 4
     },
@@ -123,14 +123,14 @@
       "expected": "ALLOW",
       "decision": "ALLOW",
       "codes": [],
-      "slot": "2660",
+      "slot": "3240",
       "ms": 8,
       "pass": true,
       "cpi": 0
     }
   ],
   "sent": {
-    "signature": "22u3Yyd6zDAnkrhzFrJBRy2RPPHx2dEcbhnwGLaZq6xmd2F4q5mpdj4aiyeqbwwkwVGsnw8iVLMmHN43uZS9n2jv",
+    "signature": "3HWZqf7CyBGBR6f5dUYhDy7N59gVCDm2WnW5kFuiwUg597RpLXwHkxYRL99H6Z5Ve8kGCHQGj73AvB3v7ZboTwdU",
     "aliceDelta": "500000000",
     "simulatedDelta": "500000000",
     "simulationMatchedExecution": true

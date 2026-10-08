@@ -52,7 +52,7 @@ import {
 } from "@solana-program/token";
 import { RpcSimulator } from "../src/simulator";
 import { Verifier, verifyBeforeSigning } from "../src/verifier";
-import { TOKEN_2022_PROGRAM, toBaseUnits } from "../src/policy";
+import { TOKEN_2022_PROGRAM, toBaseUnits, toUi } from "../src/policy";
 import type { EvaluationResult, FinancialIntent } from "../src/types";
 
 const RPC_URL = process.env.RPC_URL ?? "https://api.devnet.solana.com";
@@ -149,19 +149,31 @@ async function main() {
   } else {
     // ---- read-only mode: real Devnet USDC, real wallets that already hold it. Simulation only.
     mint = (process.env.DEVNET_USDC ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") as Address;
-    log(`Looking for existing holders of Devnet USDC ${mint}...`);
-    const { value: largest } = await rpc.getTokenLargestAccounts(mint, { commitment: "confirmed" }).send();
+    log(`Looking for existing holders of Devnet USDC ${mint} in its recent transfers...`);
+    // Public RPC disables getTokenLargestAccounts / getProgramAccounts, so read recent transfers instead.
+    const sigs = (await rpc.getSignaturesForAddress(mint, { limit: 60, commitment: "confirmed" }).send()).filter((x) => x.err === null);
+    const seen = new Set<string>();
     const wallets: { owner: Address; tokenAccount: Address; lamports: bigint; amount: bigint }[] = [];
-    for (const a of largest.slice(0, 20)) {
+    for (const sg of sigs.slice(0, 40)) {
+      if (wallets.length >= 6) break;
       try {
-        const t = await fetchToken(rpc, a.address, { commitment: "confirmed" });
-        if (t.data.state !== 1) continue; // initialized, not frozen
-        const { value: w } = await rpc.getAccountInfo(t.data.owner, { encoding: "base64", commitment: "confirmed" }).send();
-        if (!w || w.owner !== "11111111111111111111111111111111") continue; // a plain wallet, not a program
-        wallets.push({ owner: t.data.owner, tokenAccount: a.address, lamports: BigInt(w.lamports), amount: t.data.amount });
+        const tx: any = await rpc.getTransaction(sg.signature, { maxSupportedTransactionVersion: 0, encoding: "json", commitment: "confirmed" }).send();
+        if (!tx?.meta) continue;
+        const keys: string[] = [...tx.transaction.message.accountKeys, ...(tx.meta.loadedAddresses?.writable ?? []), ...(tx.meta.loadedAddresses?.readonly ?? [])];
+        for (const b of tx.meta.postTokenBalances ?? []) {
+          if (b.mint !== mint || !b.owner || seen.has(b.owner)) continue;
+          seen.add(b.owner);
+          const tokenAccount = keys[b.accountIndex] as Address;
+          const t = await fetchToken(rpc, tokenAccount, { commitment: "confirmed" }).catch(() => null);
+          if (!t || t.data.state !== 1 || t.data.owner !== b.owner || t.data.mint !== mint) continue;
+          const { value: w } = await rpc.getAccountInfo(b.owner as Address, { encoding: "base64", commitment: "confirmed" }).send();
+          if (!w || w.owner !== "11111111111111111111111111111111") continue; // a plain wallet, not a program
+          wallets.push({ owner: b.owner as Address, tokenAccount, lamports: BigInt(w.lamports), amount: t.data.amount });
+        }
       } catch {}
     }
-    const agentW = wallets.find((w) => w.lamports >= 150_000_000n && w.amount >= toBaseUnits("5000", DECIMALS));
+    // Read-only mode scales every amount by 1/1000, so a holder of a few faucet USDC is enough.
+    const agentW = wallets.find((w) => w.lamports >= 50_000_000n && w.amount >= toBaseUnits("5", DECIMALS));
     const drainerW = wallets.find((w) => w !== agentW);
     if (!agentW || !drainerW) throw new Error("No suitable Devnet USDC holders found for read-only mode.");
     agentAddr = agentW.owner;
@@ -171,11 +183,15 @@ async function main() {
   }
   const ata = async (owner: Address) => (await findAssociatedTokenPda({ mint, owner, tokenProgram: TOKEN_PROGRAM_ADDRESS }))[0];
 
+  // Read-only mode works with whatever real holders have: amounts and limits are scaled together by 1/1000.
+  const K = mode === "observe" ? 1000n : 1n;
+  const ui = (n: string) => toUi(toBaseUnits(n, DECIMALS) / K, DECIMALS);
+  const fmt = (n: string) => Number(ui(n)).toLocaleString("en-US");
   const verifier = new Verifier(new RpcSimulator(rpc));
   verifier.setPolicy({
     agentId: "treasury-agent",
     assets: { USDC: mint },
-    reviewAbove: "1000", maxPayAmount: "5000", maxApprovalAmount: "2500", allowUnlimitedApprovals: false,
+    reviewAbove: ui("1000"), maxPayAmount: ui("5000"), maxApprovalAmount: ui("2500"), allowUnlimitedApprovals: false,
     approvedRecipients: [alice.address], approvedSpenders: [router.address], approvedPrograms: [],
     newRecipientAction: "REVIEW", unknownSpenderAction: "BLOCK", unknownProgramAction: "BLOCK",
     maxSolSpendLamports: "10000000",
@@ -183,34 +199,34 @@ async function main() {
 
   // ---- the cases: each is the agent's unsigned transaction plus its declared intent
   const noop = createNoopSigner(agentAddr); // instruction builders want a signer; nothing is signed here
-  const usdc = (n: string) => toBaseUnits(n, DECIMALS);
+  const usdc = (n: string) => toBaseUnits(n, DECIMALS) / K;
   // In read-only mode recipients have no token account yet, so the payment creates it (rent is within the SOL cap).
   const pay = async (owner: Address, n: string): Promise<Instruction[]> => [
     ...(mode === "observe" ? [await getCreateAssociatedTokenIdempotentInstructionAsync({ payer: noop, owner, mint })] : []),
     getTransferCheckedInstruction({ source: agentAta, mint, destination: await ata(owner), authority: noop, amount: usdc(n), decimals: DECIMALS }),
   ];
-  const payAlice: FinancialIntent = { action: "PAY", asset: "USDC", amount: "500", recipient: alice.address };
+  const payAlice: FinancialIntent = { action: "PAY", asset: "USDC", amount: ui("500"), recipient: alice.address };
   const aliceAta = await ata(alice.address);
   const drainerAta = await ata(drainer);
   const p500 = await pay(alice.address, "500");
 
   const cases: { name: string; intent: FinancialIntent; ixs: Instruction[]; expect: string; code?: string }[] = [
-    { name: "Pay Alice 500 USDC (honest)", intent: payAlice, ixs: p500, expect: "ALLOW" },
+    { name: `Pay Alice ${fmt("500")} USDC (honest)`, intent: payAlice, ixs: p500, expect: "ALLOW" },
     { name: "+ hidden unlimited approval", intent: payAlice, ixs: [...p500, getApproveInstruction({ source: agentAta, delegate: drainer, owner: noop, amount: U64_MAX })], expect: "BLOCK", code: "UNDECLARED_APPROVAL" },
-    { name: "+ siphon 50 USDC", intent: payAlice, ixs: [...p500, ...(await pay(drainer, "50"))], expect: "BLOCK", code: "UNEXPECTED_RECIPIENT" },
-    { name: "skimmed: sends 450", intent: payAlice, ixs: await pay(alice.address, "450"), expect: "BLOCK", code: "AMOUNT_MISMATCH" },
+    { name: `+ siphon ${fmt("50")} USDC`, intent: payAlice, ixs: [...p500, ...(await pay(drainer, "50"))], expect: "BLOCK", code: "UNEXPECTED_RECIPIENT" },
+    { name: `skimmed: sends ${fmt("450")}`, intent: payAlice, ixs: await pay(alice.address, "450"), expect: "BLOCK", code: "AMOUNT_MISMATCH" },
     { name: "+ account owner takeover", intent: payAlice, ixs: [...p500, getSetAuthorityInstruction({ owned: agentAta, owner: noop, authorityType: AuthorityType.AccountOwner, newAuthority: drainer })], expect: "BLOCK", code: "AUTHORITY_CHANGE" },
-    { name: "+ 0.1 SOL drain", intent: payAlice, ixs: [...p500, getTransferSolInstruction({ source: noop, destination: drainer, amount: lamports(100_000_000n) })], expect: "BLOCK", code: "UNEXPECTED_SOL_TRANSFER" },
+    { name: "+ 0.02 SOL drain", intent: payAlice, ixs: [...p500, getTransferSolInstruction({ source: noop, destination: drainer, amount: lamports(20_000_000n) })], expect: "BLOCK", code: "UNEXPECTED_SOL_TRANSFER" },
     // Minting needs the mint authority, which only exists when this run created the mint.
     ...(mode === "full" ? [{ name: "+ unauthorized mint", intent: payAlice, ixs: [...p500, getMintToCheckedInstruction({ mint, token: drainerAta, mintAuthority: noop, amount: usdc("1000000"), decimals: DECIMALS })], expect: "BLOCK", code: "SUPPLY_CHANGE" }] : []),
     { name: "+ Token-2022 reference", intent: payAlice, ixs: [...p500, { programAddress: TOKEN_2022_PROGRAM as Address, accounts: [{ address: agentAddr, role: AccountRole.READONLY_SIGNER }], data: new Uint8Array([0]) }], expect: "BLOCK", code: "UNSUPPORTED_PROGRAM" },
     {
-      name: "Pay new supplier 4,000 (creates ATA via CPI)",
-      intent: { action: "PAY", asset: "USDC", amount: "4000", recipient: supplier.address },
+      name: `Pay new supplier ${fmt("4000")} (creates ATA via CPI)`,
+      intent: { action: "PAY", asset: "USDC", amount: ui("4000"), recipient: supplier.address },
       ixs: [await getCreateAssociatedTokenIdempotentInstructionAsync({ payer: noop, owner: supplier.address, mint }), getTransferCheckedInstruction({ source: agentAta, mint, destination: await ata(supplier.address), authority: noop, amount: usdc("4000"), decimals: DECIMALS })],
       expect: "REVIEW", code: "NEW_RECIPIENT",
     },
-    { name: "Approve Router 1,000 USDC", intent: { action: "APPROVE", asset: "USDC", spender: router.address, amount: "1000" }, ixs: [getApproveInstruction({ source: agentAta, delegate: router.address, owner: noop, amount: usdc("1000") })], expect: "ALLOW" },
+    { name: `Approve Router ${fmt("1000")} USDC`, intent: { action: "APPROVE", asset: "USDC", spender: router.address, amount: ui("1000") }, ixs: [getApproveInstruction({ source: agentAta, delegate: router.address, owner: noop, amount: usdc("1000") })], expect: "ALLOW" },
   ];
 
   const results: { name: string; expected: string; decision: string; codes: string[]; slot: string | null; ms: number; pass: boolean; cpi?: number }[] = [];
