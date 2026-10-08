@@ -1,0 +1,8 @@
+node_modules
+.next
+*.log
+.veract
+*.tsbuildinfo
+apps/web/dist-preview
+apps/web/preview/dataset.json
+.env*

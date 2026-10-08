@@ -1,0 +1,56 @@
+name: Devnet smoke test
+
+# The same engine over real Solana RPC: evaluates ten transactions against live Devnet state,
+# then signs and sends the one it allowed and checks the executed effect equals the simulated one.
+# The report is committed to packages/core/scripts/devnet-report.json, which the site shows.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "packages/core/src/**"
+      - "packages/core/scripts/devnet-smoke.ts"
+      - ".github/workflows/devnet-smoke.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: devnet-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Use a funded wallet if one is configured
+        env:
+          DEVNET_KEYPAIR: ${{ secrets.DEVNET_KEYPAIR }}
+        run: |
+          if [ -n "$DEVNET_KEYPAIR" ]; then
+            printf '%s' "$DEVNET_KEYPAIR" > "$RUNNER_TEMP/devnet-keypair.json"
+            echo "KEYPAIR=$RUNNER_TEMP/devnet-keypair.json" >> "$GITHUB_ENV"
+          fi
+      - name: Run against Devnet
+        env:
+          RPC_URL: https://api.devnet.solana.com
+        run: npm run smoke
+      - name: Commit the report
+        if: always()
+        run: |
+          f=packages/core/scripts/devnet-report.json
+          git diff --quiet -- "$f" && exit 0
+          grep -q 'devnet' "$f" || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$f"
+          git commit -m "Devnet smoke report [skip ci]"
+          git pull --rebase origin main && git push origin HEAD:main

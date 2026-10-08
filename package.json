@@ -1,0 +1,16 @@
+{
+  "name": "ostira",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm -w @ostira/core test",
+    "demo": "npm -w @ostira/core run demo",
+    "dev": "npm -w @ostira/web run dev",
+    "build": "npm -w @ostira/web run build",
+    "smoke": "npm -w @ostira/core run smoke"
+  }
+}

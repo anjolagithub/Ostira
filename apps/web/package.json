@@ -1,0 +1,35 @@
+{
+  "name": "@ostira/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "data": "tsx scripts/build-data.ts",
+    "preview:build": "npm run data && vite build --config vite.preview.config.ts && node scripts/artifact.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource-variable/martian-mono": "^5.3.0",
+    "@fontsource-variable/schibsted-grotesk": "^5.3.0",
+    "@ostira/core": "*",
+    "@phosphor-icons/react": "^2.1.10",
+    "cmdk": "1.1.1",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "8.3.3",
+    "vite-plugin-singlefile": "2.3.3"
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "cluster": "http://127.0.0.1:8899",
+  "solanaCore": "2.2.20",
+  "ranAt": "2026-10-08T10:23:13.784Z",
+  "agent": "47AirDWa7fSzGsce6SB3MRadbqvvvdjzTr6wpWVFNCRQ",
+  "mint": "4Crqi9ZfmmsF9fL1gyNBEpGLp8u9zpLV8WF2f1N7aDYr",
+  "passed": 10,
+  "total": 10,
+  "results": [
+    {
+      "name": "Pay Alice 500 USDC (honest)",
+      "expected": "ALLOW",
+      "decision": "ALLOW",
+      "codes": [],
+      "slot": "1784",
+      "ms": 21,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "+ hidden unlimited approval",
+      "expected": "BLOCK UNDECLARED_APPROVAL",
+      "decision": "BLOCK",
+      "codes": [
+        "UNDECLARED_APPROVAL",
+        "UNLIMITED_APPROVAL"
+      ],
+      "slot": "1784",
+      "ms": 11,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "+ siphon 50 USDC",
+      "expected": "BLOCK UNEXPECTED_RECIPIENT",
+      "decision": "BLOCK",
+      "codes": [
+        "UNEXPECTED_ASSET_OUTFLOW",
+        "UNEXPECTED_RECIPIENT"
+      ],
+      "slot": "1784",
+      "ms": 10,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "skimmed: sends 450",
+      "expected": "BLOCK AMOUNT_MISMATCH",
+      "decision": "BLOCK",
+      "codes": [
+        "AMOUNT_MISMATCH"
+      ],
+      "slot": "1784",
+      "ms": 8,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "+ account owner takeover",
+      "expected": "BLOCK AUTHORITY_CHANGE",
+      "decision": "BLOCK",
+      "codes": [
+        "AUTHORITY_CHANGE"
+      ],
+      "slot": "1784",
+      "ms": 12,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "+ 0.1 SOL drain",
+      "expected": "BLOCK UNEXPECTED_SOL_TRANSFER",
+      "decision": "BLOCK",
+      "codes": [
+        "SOL_SPEND_EXCEEDS_CAP",
+        "UNEXPECTED_SOL_TRANSFER"
+      ],
+      "slot": "1784",
+      "ms": 8,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "+ unauthorized mint",
+      "expected": "BLOCK SUPPLY_CHANGE",
+      "decision": "BLOCK",
+      "codes": [
+        "UNEXPECTED_RECIPIENT",
+        "SUPPLY_CHANGE"
+      ],
+      "slot": "1784",
+      "ms": 10,
+      "pass": true,
+      "cpi": 0
+    },
+    {
+      "name": "+ Token-2022 reference",
+      "expected": "BLOCK UNSUPPORTED_PROGRAM",
+      "decision": "BLOCK",
+      "codes": [
+        "UNSUPPORTED_PROGRAM"
+      ],
+      "slot": null,
+      "ms": 2,
+      "pass": true
+    },
+    {
+      "name": "Pay new supplier 4,000 (creates ATA via CPI)",
+      "expected": "REVIEW NEW_RECIPIENT",
+      "decision": "REVIEW",
+      "codes": [
+        "NEW_RECIPIENT",
+        "AMOUNT_ABOVE_REVIEW_THRESHOLD"
+      ],
+      "slot": "1784",
+      "ms": 15,
+      "pass": true,
+      "cpi": 4
+    },
+    {
+      "name": "Approve Router 1,000 USDC",
+      "expected": "ALLOW",
+      "decision": "ALLOW",
+      "codes": [],
+      "slot": "1784",
+      "ms": 10,
+      "pass": true,
+      "cpi": 0
+    }
+  ],
+  "sent": {
+    "signature": "fa3Jt3DNtzc3i632guRzJcFZXJTi59ZrWM8wnfEeJ4Bm979HKtUBTavkkEZVYLfC51ho31A4HKk9NSMZWAXFhLi",
+    "aliceDelta": "500000000",
+    "simulatedDelta": "500000000",
+    "simulationMatchedExecution": true
+  }
+}

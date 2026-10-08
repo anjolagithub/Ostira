@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Engine tests (LiteSVM, 474 + 36 adversarial transactions)
+        run: npm test
+      - name: Generate the preview dataset (engine output the static preview embeds)
+        run: npm -w @ostira/web run data
+      - name: Typecheck
+        run: npm -w @ostira/core run typecheck && npm -w @ostira/web run typecheck
+      - name: Build the web app
+        run: npm run build
