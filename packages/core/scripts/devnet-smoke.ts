@@ -21,7 +21,8 @@ import {
   compileTransaction,
   createKeyPairSignerFromBytes,
   createNoopSigner,
-  createSolanaRpc,
+  createDefaultRpcTransport,
+  createSolanaRpcFromTransport,
   createSolanaRpcSubscriptions,
   createTransactionMessage,
   generateKeyPairSigner,
@@ -61,7 +62,22 @@ const DRY = process.env.DRY === "1";
 const DECIMALS = 6;
 const U64_MAX = 2n ** 64n - 1n;
 
-const rpc = createSolanaRpc(RPC_URL);
+// Public RPC throttles shared IPs (CI runners): retry 429s with backoff instead of failing the run.
+const baseTransport = createDefaultRpcTransport({ url: RPC_URL });
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+let step = "start";
+const transport = (async (...args: Parameters<typeof baseTransport>) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await baseTransport(...args);
+    } catch (e) {
+      const throttled = /429|Too Many Requests/i.test(String((e as Error)?.message) + String((e as { context?: { statusCode?: number } })?.context?.statusCode));
+      if (!throttled || attempt >= 8) throw e;
+      await sleep(Math.min(30_000, 2_000 * 2 ** attempt));
+    }
+  }
+}) as typeof baseTransport;
+const rpc = createSolanaRpcFromTransport(transport);
 const rpcSubscriptions = createSolanaRpcSubscriptions(WS_URL);
 const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
 const log = (...a: unknown[]) => console.log(...a);
@@ -118,8 +134,10 @@ async function unsigned(feePayer: Address, ixs: Instruction[]) {
 }
 
 async function main() {
+  step = "connect";
   const version = await rpc.getVersion().send();
   log(`Cluster ${RPC_URL}, solana-core ${version["solana-core"]}`);
+  step = "fund a wallet";
   const payer = await loadPayer();
   const mode: "full" | "observe" = payer ? "full" : "observe";
   const [mintKp, alice, supplier, router, drainerKp] = await Promise.all([generateKeyPairSigner(), generateKeyPairSigner(), generateKeyPairSigner(), generateKeyPairSigner(), generateKeyPairSigner()]);
@@ -127,6 +145,7 @@ async function main() {
 
   if (payer) {
     // ---- full mode: real transactions that build the world (mint, accounts, balances)
+    step = "set up mint and accounts";
     log("Setting up a test mint and accounts on the cluster...");
     mint = mintKp.address;
     agentAddr = payer.address;
@@ -149,6 +168,7 @@ async function main() {
   } else {
     // ---- read-only mode: real Devnet USDC, real wallets that already hold it. Simulation only.
     mint = (process.env.DEVNET_USDC ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") as Address;
+    step = "find Devnet USDC holders";
     log(`Looking for existing holders of Devnet USDC ${mint} in its recent transfers...`);
     // Public RPC disables getTokenLargestAccounts / getProgramAccounts, so read recent transfers instead.
     const sigs = (await rpc.getSignaturesForAddress(mint, { limit: 60, commitment: "confirmed" }).send()).filter((x) => x.err === null);
@@ -232,6 +252,7 @@ async function main() {
   const results: { name: string; expected: string; decision: string; codes: string[]; slot: string | null; ms: number; pass: boolean; cpi?: number }[] = [];
   let honest: { serialized: string; tx: Awaited<ReturnType<typeof unsigned>>["tx"]; result: EvaluationResult } | null = null;
   for (const c of cases) {
+    step = `evaluate: ${c.name}`;
     const u = await unsigned(agentAddr, c.ixs);
     const t0 = performance.now();
     const r = await verifier.evaluate({ agentId: "treasury-agent", intent: c.intent, transaction: { serialized: u.serialized } });
@@ -271,4 +292,8 @@ async function main() {
   process.exit(report.passed === report.total ? 0 : 1);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  const ctx = (e as { context?: { statusCode?: number } })?.context;
+  console.error(`FAILED during "${step}": ${(e as Error)?.message ?? e}${ctx?.statusCode ? ` (HTTP ${ctx.statusCode})` : ""}`);
+  process.exit(1);
+});
