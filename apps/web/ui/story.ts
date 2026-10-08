@@ -35,12 +35,17 @@ function undeclared(l: DiffLine, actors: Actors): string | null {
 /** One sentence in plain words: what was declared, and what else the transaction would do. */
 export function story(e: ScenarioEntry, actors: Actors): string {
   const r = e.result;
-  const declared = intentSentence(r.intent as never, actors).replace(/^Pay /, "pays ").replace(/^Approve /, "approves ");
+  const declared = intentSentence(r.intent as never, actors).replace(/^Pay /, "pays ").replace(/^Approve /, "approves ").replace(/^Swap /, "swaps ");
   const confirmed = r.diff.some((l) => l.op === "=");
   const extra = r.diff.filter((l) => l.op === "+").map((l) => undeclared(l, actors)).filter(Boolean) as string[];
   const missing = r.diff.some((l) => l.op === "-");
+  const short = r.diff.find((l) => l.op === "+" && l.kind === "asset" && l.bound?.kind === "min");
+  if (short && short.kind === "asset") return `The transaction would deliver only ${amount(short.amount)} ${short.symbol}, below the declared minimum of ${amount(short.bound!.amount)} ${short.symbol}.`;
+  const over = r.diff.find((l) => l.op === "+" && l.kind === "asset" && l.bound?.kind === "max");
+  if (over && over.kind === "asset") return `The transaction would take ${amount(over.amount)} ${over.symbol} from the agent, more than the declared ${amount(over.bound!.amount)} ${over.symbol}.`;
   if (confirmed && extra.length) return `The transaction ${declared}, but also ${extra[0]}.`;
   if (missing && extra.length) return `The transaction does not do what was declared: it ${extra[0]}.`;
+  if (missing) return "The transaction does not deliver what was declared.";
   if (r.decision === "ALLOW") return `The transaction ${declared}, and nothing else.`;
   return "";
 }

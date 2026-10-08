@@ -28,7 +28,9 @@ export type FindingCode =
   | "NEW_RECIPIENT"
   | "UNKNOWN_SPENDER"
   | "AMOUNT_ABOVE_REVIEW_THRESHOLD"
-  | "AMOUNT_ABOVE_LIMIT";
+  | "AMOUNT_ABOVE_LIMIT"
+  | "SWAP_INPUT_EXCEEDS_INTENT"
+  | "SWAP_OUTPUT_BELOW_MINIMUM";
 
 /** Category for every finding code, so integrators can branch on the kind of failure. */
 export const FINDING_CATEGORY: Record<FindingCode, FindingCategory> = {
@@ -57,4 +59,6 @@ export const FINDING_CATEGORY: Record<FindingCode, FindingCategory> = {
   UNKNOWN_SPENDER: "POLICY_VIOLATION",
   AMOUNT_ABOVE_REVIEW_THRESHOLD: "POLICY_VIOLATION",
   AMOUNT_ABOVE_LIMIT: "POLICY_VIOLATION",
+  SWAP_INPUT_EXCEEDS_INTENT: "INTENT_MISMATCH",
+  SWAP_OUTPUT_BELOW_MINIMUM: "INTENT_MISMATCH",
 };

@@ -45,8 +45,9 @@ export function inlineName(address: string, actors: Actors) {
   return /^(New|Unknown|Treasury|Spare) /.test(n) ? n.charAt(0).toLowerCase() + n.slice(1) : n;
 }
 
-export function intentSentence(intent: { action: string; amount: string; asset: string; recipient?: string; spender?: string } | null, actors: Actors) {
+export function intentSentence(intent: { action: string; amount: string; asset: string; recipient?: string; spender?: string; assetOut?: string; minAmountOut?: string } | null, actors: Actors) {
   if (!intent) return "Invalid intent";
+  if (intent.action === "SWAP") return `Swap ${amount(intent.amount)} ${intent.asset} for at least ${amount(intent.minAmountOut!)} ${intent.assetOut}`;
   if (intent.action === "PAY") return `Pay ${inlineName(intent.recipient!, actors)} ${amount(intent.amount)} ${intent.asset}`;
   return intent.amount === "unlimited"
     ? `Approve ${inlineName(intent.spender!, actors)} for unlimited ${intent.asset}`
@@ -103,6 +104,8 @@ export const FINDING_SHORT: Record<string, string> = {
   UNKNOWN_SPENDER: "Spender not approved",
   AMOUNT_ABOVE_REVIEW_THRESHOLD: "Above review threshold",
   AMOUNT_ABOVE_LIMIT: "Above autonomous limit",
+  SWAP_OUTPUT_BELOW_MINIMUM: "− receives less than the minimum",
+  SWAP_INPUT_EXCEEDS_INTENT: "+ gives more than declared",
 };
 
 export const CATEGORY_LABEL: Record<string, string> = {

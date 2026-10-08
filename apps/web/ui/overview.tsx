@@ -143,12 +143,12 @@ export function Overview() {
       <section className="block-sect">
         <header>
           <h2>How it works</h2>
-          <p>Below, the evaluation above replayed step by step. Every value is the engine&rsquo;s own output, timings included; only the pacing is slowed down so you can follow it.</p>
+          <p>Agents increasingly sign transactions they didn&rsquo;t build: a payments API&rsquo;s transfer, a market maker&rsquo;s swap quote, whatever a tool returns. {BRAND.name} checks those bytes against what the agent was asked to do. Below, the evaluation above, replayed step by step with the engine&rsquo;s own values and timings; only the pacing is slowed.</p>
         </header>
         <div className="how">
           <ol className="how-steps">
-            <li><b>Declare</b><span>The agent states a structured intent: pay, or approve, an exact amount to an exact address.</span></li>
-            <li><b>Simulate</b><span>The unsigned transaction is dry-run. Nothing is signed or broadcast.</span></li>
+            <li><b>Declare</b><span>The agent states what it was asked to do: pay, approve or swap, with exact amounts and addresses.</span></li>
+            <li><b>Simulate</b><span>The unsigned transaction, whoever built it, is dry-run. Nothing is signed or broadcast.</span></li>
             <li><b>Compare</b><span>Before and after state becomes effects, including CPI. Each must match the intent.</span></li>
             <li><b>Decide</b><span>ALLOW, REVIEW or BLOCK, with machine-readable reasons. The strictest finding wins.</span></li>
           </ol>
@@ -169,7 +169,7 @@ export function Overview() {
       <section className="block-sect">
         <header>
           <h2>Seven attack classes, and six more at the token level</h2>
-          <p>Each row is the same honest payment, &ldquo;Pay Alice 500 USDC&rdquo;, with one behaviour slipped into the transaction. Verdicts and reasons are the engine&rsquo;s output.</p>
+          <p>Each row is the same honest payment, &ldquo;Pay Alice 500 USDC&rdquo;, with one behaviour slipped in by whoever built the transaction. Every class also runs against swaps and approvals. Verdicts and reasons are the engine&rsquo;s output.</p>
         </header>
         <div className="table-wrap">
           <table className="attack-table">
@@ -188,7 +188,7 @@ export function Overview() {
         <div className="proof">
           <div className="proof-num">{d.sweep.blocked}/{d.sweep.total}<small>adversarial cases rejected</small></div>
           <div className="proof-copy">
-            <p><strong>{d.sweep.allowed} of {d.sweep.total} adversarial test transactions were incorrectly allowed.</strong> The suite builds every combination of the seven attack classes on six intents, {d.sweep.total} real transactions, and simulates each against the SPL Token program.</p>
+            <p><strong>{d.sweep.allowed} of {d.sweep.total} adversarial test transactions were incorrectly allowed.</strong> The suite builds every combination of the seven attack classes on {Object.keys(d.bases).length} intents (payments, a swap, approvals), {d.sweep.total} real transactions, and simulates each against the SPL Token program.</p>
             <p>The six token-level attacks are tested one at a time on every intent: {d.extendedSweep.blocked}/{d.extendedSweep.total} rejected. The clean payment and the limited approval are still allowed. These are generated test cases on a local runtime, not production traffic.</p>
           </div>
         </div>

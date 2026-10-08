@@ -48,7 +48,7 @@ export function DocsView() {
       <article className="docs">
         <header className="docs-head">
           <h1>Docs</h1>
-          <p className="muted">{BRAND.name} answers one question before a wallet signs: does this transaction do exactly what the agent declared, and is the agent allowed to do it?</p>
+          <p className="muted">Agents sign transactions they didn&rsquo;t build: a payments API&rsquo;s transfer, a market maker&rsquo;s quote, a tool&rsquo;s output. {BRAND.name} answers one question before a wallet signs: does this transaction do exactly what the agent was asked to do, and is the agent allowed to do it?</p>
         </header>
 
         <section>
@@ -117,7 +117,7 @@ export function DocsView() {
         <section>
           <h2>Scope of v1</h2>
           <ul className="docs-list">
-            <li>Intents: PAY and APPROVE. SWAP comes next.</li>
+            <li>Intents: PAY, APPROVE and SWAP. A swap is judged on its economic bounds: the agent gives at most the declared amount, receives at least the declared minimum, and nobody outside the trade receives anything.</li>
             <li>Tokens: the original SPL Token program only. Token-2022 and its extensions (transfer hooks, permanent delegates, transfer fees, confidential balances) are unsupported and fail closed with <code>UNSUPPORTED_PROGRAM</code>.</li>
             <li>Transactions that use address lookup tables are blocked with <code>UNDECODABLE_TRANSACTION</code>.</li>
             <li>Effects are what simulation observes: token balances, allowances, token account and mint authorities, closures, freezes, supply changes, SOL movement, and every program reached, including through CPI. No undeclared token recipient may receive value, and SOL may move only within the fee and rent cap.</li>

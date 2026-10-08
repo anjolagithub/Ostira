@@ -148,7 +148,7 @@ export function HeroReplay({ attacked, honest }: { attacked: ScenarioEntry; hone
       </section>
 
       <section className="rp" data-state={sectionState(1)}>
-        <h4>Transaction it built <span className="faint">unsigned</span></h4>
+        <h4>Transaction it was handed <span className="faint">built by a tool it called, unsigned</span></h4>
         <ol className="rp-ix">
           {entry.instructions.map((ix, i) => {
             const injected = (entry.injected ?? []).includes(i) && r.decision !== "ALLOW";

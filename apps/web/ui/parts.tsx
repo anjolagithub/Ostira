@@ -142,18 +142,25 @@ export const OP_LABEL: Record<DiffLine["op"], string> = {
   "=": "Declared and confirmed by simulation",
   "+": "Happens, but was not declared",
   "-": "Declared, but does not happen",
-  "~": "Network fees and rent",
+  "~": "Expected context: fees, rent, the other side of a trade",
 };
 export const OP_STATUS: Record<DiffLine["op"], string> = { "=": "confirmed", "+": "undeclared", "-": "missing", "~": "network/rent" };
+const statusOf = (l: DiffLine) => (l.op === "~" && l.kind === "asset" ? "counterparty" : l.op === "-" && l.kind === "asset" && l.bound ? "not met" : OP_STATUS[l.op]);
 
 const AUTH: Record<string, string> = { owner: "owner", closeAuthority: "close authority", mintAuthority: "mint authority", freezeAuthority: "freeze authority" };
 
 export function describe(line: DiffLine, actors: Actors): { text: ReactNode; sub?: ReactNode; amt: string } {
   switch (line.kind) {
-    case "asset":
+    case "asset": {
+      const bound = line.bound ? `declared ${line.bound.kind === "max" ? "at most" : "at least"} ${amount(line.bound.amount)} ${line.symbol}` : undefined;
+      const side = line.reason === "counterparty" ? "Other side of the trade" : undefined;
+      if (line.op === "-" && line.bound) {
+        return { text: <><Who address={line.owner} actors={actors} /> {line.direction === "out" ? "gives" : "receives"} {line.bound.kind === "max" ? "at most" : "at least"}</>, amt: `${line.direction === "out" ? "−" : "+"}${amount(line.amount)} ${line.symbol}` };
+      }
       return line.direction === "out"
-        ? { text: <><Who address={line.owner} actors={actors} /> sends</>, amt: `−${amount(line.amount)} ${line.symbol}` }
-        : { text: <><Who address={line.owner} actors={actors} /> receives</>, amt: `+${amount(line.amount)} ${line.symbol}` };
+        ? { text: <><Who address={line.owner} actors={actors} /> {line.bound ? "gives" : "sends"}</>, sub: bound ?? side, amt: `−${amount(line.amount)} ${line.symbol}` }
+        : { text: <><Who address={line.owner} actors={actors} /> receives</>, sub: bound ?? side, amt: `+${amount(line.amount)} ${line.symbol}` };
+    }
     case "allowance":
       return {
         text: line.unlimited
@@ -208,7 +215,7 @@ export function DiffRows({ lines, actors, shown, flash }: { lines: DiffLine[]; a
               {d.sub && <span className="diff-sub">{d.sub}</span>}
             </span>
             <span className="diff-amt" role="cell">{d.amt}</span>
-            <span className="diff-status" role="cell">{OP_STATUS[l.op]}</span>
+            <span className="diff-status" role="cell">{statusOf(l)}</span>
           </div>
         );
       })}

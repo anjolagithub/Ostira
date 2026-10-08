@@ -1,4 +1,4 @@
-import type { ApproveIntent, EconomicEffect, Finding, PayIntent } from "./types";
+import type { ApproveIntent, EconomicEffect, Finding, PayIntent, SwapIntent } from "./types";
 import { toUi } from "./policy";
 import { U64_MAX } from "./effects";
 
@@ -11,6 +11,54 @@ export interface MatchContext {
   maxSolSpendLamports: bigint;
   /** Display name for a mint (symbol if known). */
   symbol: (mint: string) => string;
+  /** SWAP only: what the agent must receive. */
+  out?: { mint: string; decimals: number; min: bigint };
+}
+
+/**
+ * Owners that give something in this transaction: the other side of a trade (a market maker, a pool,
+ * an intermediate hop). Receiving value is only expected from them; anyone who only receives is undeclared.
+ */
+export function counterparties(fx: EconomicEffect, agentWallet: string): Set<string> {
+  return new Set(fx.assetChanges.filter((c) => c.owner !== agentWallet && c.delta < 0n).map((c) => c.owner));
+}
+
+export function matchSwap(intent: SwapIntent, fx: EconomicEffect, ctx: MatchContext): Finding[] {
+  const out: Finding[] = [];
+  const o = ctx.out!;
+  const maxIn = ctx.amount!;
+  const fmtIn = (v: bigint) => `${toUi(v, ctx.decimals)} ${ctx.symbol(ctx.mint)}`;
+  const fmtOut = (v: bigint) => `${toUi(v, o.decimals)} ${ctx.symbol(o.mint)}`;
+
+  const spent = -(fx.assetChanges.find((c) => c.owner === ctx.agentWallet && c.mint === ctx.mint)?.delta ?? 0n);
+  const received = fx.assetChanges.find((c) => c.owner === ctx.agentWallet && c.mint === o.mint)?.delta ?? 0n;
+  if (spent > maxIn) {
+    out.push({ code: "SWAP_INPUT_EXCEEDS_INTENT", decision: "BLOCK", message: `Agent gives ${fmtIn(spent)}, more than the declared ${fmtIn(maxIn)}.`, detail: { declared: fmtIn(maxIn), observed: fmtIn(spent) } });
+  }
+  if (received < o.min) {
+    out.push({ code: "SWAP_OUTPUT_BELOW_MINIMUM", decision: "BLOCK", message: received <= 0n ? `Agent receives no ${ctx.symbol(o.mint)}, but the intent requires at least ${fmtOut(o.min)}.` : `Agent receives ${fmtOut(received)}, below the declared minimum of ${fmtOut(o.min)}.`, detail: { declared: fmtOut(o.min), observed: fmtOut(received > 0n ? received : 0n) } });
+  }
+
+  const cps = counterparties(fx, ctx.agentWallet);
+  for (const c of fx.assetChanges) {
+    if (c.owner === ctx.agentWallet) {
+      if (c.delta < 0n && c.mint !== ctx.mint) {
+        out.push({ code: "UNEXPECTED_ASSET_OUTFLOW", decision: "BLOCK", message: `Agent loses ${toUi(-c.delta, c.decimals)} ${ctx.symbol(c.mint)}, an asset the swap does not give.`, detail: { mint: c.mint, amount: toUi(-c.delta, c.decimals) } });
+      }
+      continue;
+    }
+    if (c.delta > 0n && !cps.has(c.owner)) {
+      out.push({ code: "UNEXPECTED_RECIPIENT", decision: "BLOCK", message: `${short(c.owner)} receives ${toUi(c.delta, c.decimals)} ${ctx.symbol(c.mint)} without being a party to the trade.`, detail: { owner: c.owner, mint: c.mint, amount: toUi(c.delta, c.decimals) } });
+    }
+  }
+
+  for (const a of fx.approvals) {
+    if (a.newDelegate === null) continue;
+    out.push(...approvalAsUndeclared(a.newDelegate, a.newAmount, a.unlimited, a.mint === ctx.mint ? ctx.decimals : a.mint === o.mint ? o.decimals : 0, a.tokenAccount, ctx.symbol(a.mint)));
+  }
+  out.push(...sideEffects(fx, ctx));
+  void intent;
+  return out;
 }
 
 const short = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;

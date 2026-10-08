@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { decodeTransaction, traceInstructions } from "./introspect";
 import { extractEffects, readMint } from "./effects";
-import { matchApprove, matchPay, type MatchContext } from "./matcher";
+import { matchApprove, matchPay, matchSwap, type MatchContext } from "./matcher";
 import { applyPolicy } from "./policyEngine";
 import { buildEffectDiff, type DiffLine } from "./diff";
 import { canonicalJson, type Policy, PolicySchema, policyVersion, toBaseUnits, TOKEN_2022_PROGRAM } from "./policy";
@@ -192,6 +192,24 @@ export class Verifier {
       step("validate", false);
       return finish({ intent, agentWallet: req.agentWallet ?? "", effect: null, asset });
     }
+    // SWAP: the output asset must be known too, and the minimum must be exact in its decimals.
+    let out: MatchContext["out"];
+    if (intent.action === "SWAP") {
+      const outMint = policy.assets[intent.assetOut] ?? (intent.assetOut.length >= 32 ? intent.assetOut : undefined);
+      const outInfo = outMint ? await readMint(this.simulator, outMint) : null;
+      if (!outMint || !outInfo) {
+        findings.push({ code: "UNKNOWN_ASSET", decision: "BLOCK", message: `Asset ${intent.assetOut} is not a known SPL token mint.` });
+        step("validate", false);
+        return finish({ intent, agentWallet: req.agentWallet ?? "", effect: null, asset });
+      }
+      try {
+        out = { mint: outMint, decimals: outInfo.decimals, min: toBaseUnits(intent.minAmountOut, outInfo.decimals) };
+      } catch (e) {
+        findings.push({ code: "INVALID_INTENT", decision: "BLOCK", message: (e as Error).message });
+        step("validate", false);
+        return finish({ intent, agentWallet: req.agentWallet ?? "", effect: null, asset });
+      }
+    }
     step("validate", true);
 
     // 2. Decode. Fail closed on anything we can't fully resolve.
@@ -239,8 +257,8 @@ export class Verifier {
     }
 
     // 5. Does the effect equal the intent, and nothing more?
-    const ctx: MatchContext = { agentWallet, mint, decimals: mintInfo.decimals, amount: declared, maxSolSpendLamports: BigInt(policy.maxSolSpendLamports), symbol: (m) => Object.entries(policy.assets).find(([, a]) => a === m)?.[0] ?? `${m.slice(0, 4)}…${m.slice(-4)}` };
-    const matchFindings = intent.action === "PAY" ? matchPay(intent, effect, ctx) : matchApprove(intent, effect, ctx);
+    const ctx: MatchContext = { agentWallet, mint, decimals: mintInfo.decimals, amount: declared, maxSolSpendLamports: BigInt(policy.maxSolSpendLamports), symbol: (m) => Object.entries(policy.assets).find(([, a]) => a === m)?.[0] ?? `${m.slice(0, 4)}…${m.slice(-4)}`, out };
+    const matchFindings = intent.action === "PAY" ? matchPay(intent, effect, ctx) : intent.action === "SWAP" ? matchSwap(intent, effect, ctx) : matchApprove(intent, effect, ctx);
     findings.push(...matchFindings);
     step("match", matchFindings.length === 0, matchFindings.length ? `${matchFindings.length} mismatch${matchFindings.length === 1 ? "" : "es"}` : "effect equals intent");
 
@@ -253,7 +271,7 @@ export class Verifier {
     step("policy", pol.findings.length === 0, pv);
 
     const diff = buildEffectDiff({
-      intent, effect, agentWallet, mint, decimals: mintInfo.decimals, symbol: ctx.symbol,
+      intent, effect, agentWallet, mint, decimals: mintInfo.decimals, symbol: ctx.symbol, out,
       approvedPrograms: policy.approvedPrograms, maxSolSpendLamports: ctx.maxSolSpendLamports,
     });
     return finish({ intent, agentWallet, effect, asset, matchFindings, suggestedMaxAmount: pol.suggestedMaxAmount, logs: outcome.logs, diff });

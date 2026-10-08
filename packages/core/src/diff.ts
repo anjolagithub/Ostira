@@ -1,17 +1,24 @@
-import { BASELINE_PROGRAMS, toUi } from "./policy";
+import { BASELINE_PROGRAMS, toBaseUnits, toUi } from "./policy";
 import type { EconomicEffect, FinancialIntent } from "./types";
+import { counterparties } from "./matcher";
 
 /**
  * The Effect Diff: declared intent vs observed effect, line by line.
  *   "="  declared and observed
  *   "+"  observed but NOT declared
  *   "-"  declared but NOT observed
- *   "~"  context the intent doesn't speak to (network fees, rent)
+ *   "~"  context the intent doesn't restrict (network fees, rent, the other side of a trade)
  */
 export type DiffOp = "=" | "+" | "-" | "~";
 
 export type DiffLine =
-  | { op: DiffOp; kind: "asset"; owner: string; mint: string; symbol: string; amount: string; direction: "in" | "out" }
+  | {
+      op: DiffOp; kind: "asset"; owner: string; mint: string; symbol: string; amount: string; direction: "in" | "out";
+      /** SWAP: the declared bound this line was checked against ("at most" for what is given, "at least" for what is received). */
+      bound?: { kind: "max" | "min"; amount: string };
+      /** "~" lines on the other side of a trade. */
+      reason?: "counterparty";
+    }
   | { op: DiffOp; kind: "allowance"; owner: string; spender: string; mint: string; symbol: string; amount: string; unlimited: boolean }
   | { op: DiffOp; kind: "sol"; account: string; amount: string; direction: "in" | "out"; reason?: "fees" }
   | { op: DiffOp; kind: "authority"; tokenAccount: string; field: string; to: string | null }
@@ -29,13 +36,44 @@ export function buildEffectDiff(args: {
   symbol: (mint: string) => string;
   approvedPrograms: string[];
   maxSolSpendLamports: bigint;
+  out?: { mint: string; decimals: number; min: bigint };
 }): DiffLine[] {
   const { intent, effect, agentWallet, mint, decimals, symbol } = args;
   const lines: DiffLine[] = [];
   const sym = symbol(mint);
   const consumed = new Set<object>();
 
-  if (intent.action === "PAY") {
+  if (intent.action === "SWAP" && args.out) {
+    const o = args.out;
+    const maxIn = toBaseUnits(intent.amount, decimals);
+    const give = effect.assetChanges.find((c) => c.owner === agentWallet && c.mint === mint && c.delta < 0n);
+    const get = effect.assetChanges.find((c) => c.owner === agentWallet && c.mint === o.mint && c.delta > 0n);
+    const maxUi = normalize(intent.amount);
+    const minUi = toUi(o.min, o.decimals);
+    if (give) {
+      consumed.add(give);
+      lines.push({ op: -give.delta <= maxIn ? "=" : "+", kind: "asset", owner: agentWallet, mint, symbol: sym, amount: toUi(-give.delta, give.decimals), direction: "out", bound: { kind: "max", amount: maxUi } });
+    } else {
+      lines.push({ op: "-", kind: "asset", owner: agentWallet, mint, symbol: sym, amount: maxUi, direction: "out", bound: { kind: "max", amount: maxUi } });
+    }
+    if (get && get.delta >= o.min) {
+      consumed.add(get);
+      lines.push({ op: "=", kind: "asset", owner: agentWallet, mint: o.mint, symbol: symbol(o.mint), amount: toUi(get.delta, o.decimals), direction: "in", bound: { kind: "min", amount: minUi } });
+    } else {
+      lines.push({ op: "-", kind: "asset", owner: agentWallet, mint: o.mint, symbol: symbol(o.mint), amount: minUi, direction: "in", bound: { kind: "min", amount: minUi } });
+      if (get) {
+        consumed.add(get);
+        lines.push({ op: "+", kind: "asset", owner: agentWallet, mint: o.mint, symbol: symbol(o.mint), amount: toUi(get.delta, o.decimals), direction: "in", bound: { kind: "min", amount: minUi } });
+      }
+    }
+    // The other side of the trade: context, not an undeclared effect.
+    const cps = counterparties(effect, agentWallet);
+    for (const c of effect.assetChanges) {
+      if (consumed.has(c) || c.owner === agentWallet || !cps.has(c.owner)) continue;
+      consumed.add(c);
+      lines.push({ op: "~", kind: "asset", owner: c.owner, mint: c.mint, symbol: symbol(c.mint), amount: toUi(c.delta < 0n ? -c.delta : c.delta, c.decimals), direction: c.delta < 0n ? "out" : "in", reason: "counterparty" });
+    }
+  } else if (intent.action === "PAY") {
     const declared = [
       { owner: agentWallet, amount: intent.amount, direction: "out" as const },
       { owner: intent.recipient, amount: intent.amount, direction: "in" as const },
@@ -55,7 +93,7 @@ export function buildEffectDiff(args: {
         lines.push({ op: "-", kind: "asset", owner: d.owner, mint, symbol: sym, amount: normalize(d.amount), direction: d.direction });
       }
     }
-  } else {
+  } else if (intent.action === "APPROVE") {
     const grant = effect.approvals.find((a) => a.newDelegate !== null && a.owner === agentWallet && a.mint === mint && a.newDelegate === intent.spender);
     const declaredUnlimited = intent.amount === "unlimited";
     const declaredAmount = declaredUnlimited ? "unlimited" : normalize(intent.amount as string);

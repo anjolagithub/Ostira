@@ -10,7 +10,7 @@ const AddressString = z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/, "invalid
 const UiAmount = z.string().regex(/^\d+(\.\d+)?$/, "amount must be a positive decimal string");
 
 /** Asset reference: a symbol from the policy's asset registry, or a raw mint address. */
-const AssetRef = z.union([z.string().regex(/^[A-Z0-9]{2,10}$/), AddressString]);
+const AssetRef = z.union([z.string().regex(/^[A-Za-z0-9]{2,10}$/), AddressString]);
 
 export const PayIntentSchema = z.object({
   action: z.literal("PAY"),
@@ -28,7 +28,21 @@ export const ApproveIntentSchema = z.object({
   amount: z.union([UiAmount, z.literal("unlimited")]),
 });
 
-export const FinancialIntentSchema = z.discriminatedUnion("action", [PayIntentSchema, ApproveIntentSchema]);
+/**
+ * Exchange one asset for another, typically through a transaction a third party built (an aggregator
+ * route, a market maker's quote). The guarantee is economic: the agent gives at most `amount` of `asset`,
+ * receives at least `minAmountOut` of `assetOut`, and nothing else of the agent's moves.
+ */
+export const SwapIntentSchema = z.object({
+  action: z.literal("SWAP"),
+  asset: AssetRef,
+  amount: UiAmount,
+  assetOut: AssetRef,
+  minAmountOut: UiAmount,
+});
+
+export const FinancialIntentSchema = z.discriminatedUnion("action", [PayIntentSchema, ApproveIntentSchema, SwapIntentSchema]);
+export type SwapIntent = z.infer<typeof SwapIntentSchema>;
 export type PayIntent = z.infer<typeof PayIntentSchema>;
 export type ApproveIntent = z.infer<typeof ApproveIntentSchema>;
 export type FinancialIntent = z.infer<typeof FinancialIntentSchema>;

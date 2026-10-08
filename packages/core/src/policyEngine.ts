@@ -27,9 +27,9 @@ export function applyPolicy(intent: FinancialIntent, fx: EconomicEffect, policy:
     });
   }
 
-  if (intent.action === "PAY") {
+  if (intent.action === "PAY" || intent.action === "SWAP") {
     const amount = toBaseUnits(intent.amount, decimals);
-    if (!policy.approvedRecipients.includes(intent.recipient)) {
+    if (intent.action === "PAY" && !policy.approvedRecipients.includes(intent.recipient)) {
       findings.push({ code: "NEW_RECIPIENT", decision: policy.newRecipientAction as Decision, message: `${short(intent.recipient)} has never been approved as a recipient for this agent.`, detail: { recipient: intent.recipient } });
     }
     const max = toBaseUnits(policy.maxPayAmount, decimals);

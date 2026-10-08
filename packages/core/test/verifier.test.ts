@@ -114,7 +114,7 @@ describe("soundness sweep", () => {
         checked++;
       }
     }
-    expect(checked).toBe(3 * 127 + 3 * 31); // 474 attacked transactions
+    expect(checked).toBe(4 * 127 + 3 * 31); // 601 attacked transactions: 3 payments + 1 swap, 3 approvals
   }, 120_000);
 });
 
@@ -207,7 +207,7 @@ describe("extended token attacks", () => {
         n++;
       }
     }
-    expect(n).toBe(36);
+    expect(n).toBe(42);
   });
 
   it("the mint authority change names the field", async () => {
@@ -282,5 +282,48 @@ describe("binding a verdict to the exact transaction", () => {
     expect(r.reasons.every((f) => f.category)).toBe(true);
     expect(r.reasons.find((f) => f.code === "UNDECLARED_APPROVAL")!.category).toBe("INTENT_MISMATCH");
     expect(r.reasons.find((f) => f.code === "UNKNOWN_PROGRAM")!.category).toBe("POLICY_VIOLATION");
+  });
+});
+
+describe("swaps: a transaction the agent did not build", () => {
+  it("an honest market-maker fill within the declared bounds → ALLOW", async () => {
+    const r = await run("swap-wbtc");
+    expect(r.decision).toBe("ALLOW");
+    expect(r.reasons).toEqual([]);
+    const ops = r.diff.map((l) => `${l.op}${l.kind}${(l as { reason?: string }).reason === "counterparty" ? ":cp" : ""}`);
+    expect(ops).toEqual(["=asset", "=asset", "~asset:cp", "~asset:cp", "~sol"]);
+    expect(r.diff[1]).toMatchObject({ amount: "0.01", symbol: "wBTC", bound: { kind: "min", amount: "0.0099" } });
+  });
+
+  const expected: Record<string, string[]> = {
+    skim: ["SWAP_OUTPUT_BELOW_MINIMUM"],
+    redirect: ["SWAP_OUTPUT_BELOW_MINIMUM", "UNEXPECTED_RECIPIENT"],
+    siphon: ["SWAP_INPUT_EXCEEDS_INTENT", "UNEXPECTED_RECIPIENT"],
+    hiddenApproval: ["UNDECLARED_APPROVAL", "UNLIMITED_APPROVAL"],
+    ownerTakeover: ["AUTHORITY_CHANGE"],
+    solDrain: ["UNEXPECTED_SOL_TRANSFER"],
+    rogueProgram: ["UNKNOWN_PROGRAM"],
+    burn: ["SWAP_INPUT_EXCEEDS_INTENT", "SUPPLY_CHANGE"],
+    mintSupply: ["UNEXPECTED_RECIPIENT", "SUPPLY_CHANGE"],
+  };
+  for (const [attack, codesWanted] of Object.entries(expected)) {
+    it(`swap + ${attack} → BLOCK (${codesWanted.join(", ")})`, async () => {
+      const r = await run("swap-wbtc", [attack as AnyAttackId]);
+      expect(r.decision).toBe("BLOCK");
+      expect(codes(r)).toEqual(expect.arrayContaining(codesWanted));
+    });
+  }
+
+  it("a short fill shows the declared minimum struck out and the observed fill added", async () => {
+    const r = await run("swap-wbtc", ["skim"]);
+    const out = r.diff.filter((l) => l.kind === "asset" && (l as { symbol: string }).symbol === "wBTC" && (l as { owner: string }).owner === world.agent);
+    expect(out.map((l) => `${l.op}${(l as { amount: string }).amount}`)).toEqual(["-0.0099", "+0.009"]);
+  });
+
+  it("an output asset outside the registry is refused before simulation", async () => {
+    const sc = await buildScenario(world, "swap-wbtc");
+    const r = await world.verifier.evaluate({ ...sc.request, intent: { ...sc.request.intent, assetOut: "DOGE" } as never });
+    expect(r.decision).toBe("BLOCK");
+    expect(codes(r)).toEqual(["UNKNOWN_ASSET"]);
   });
 });

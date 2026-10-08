@@ -321,6 +321,7 @@ const BASE_NOTE: Record<string, string> = {
   "pay-alice": "Approved recipient, under every limit",
   "pay-supplier": "First payment to this wallet",
   "pay-alice-large": "Above the 5,000 USDC autonomous limit",
+  "swap-wbtc": "A market maker builds the transaction; the agent only sees bytes",
   "approve-router": "Approved spender, within the allowance cap",
   "approve-unlimited": "Honest, but policy forbids unlimited allowances",
   "approve-unknown": "Spender is not on the allowlist",
@@ -394,7 +395,7 @@ function LabView({ base: baseIn, attacks: attacksIn }: { base?: BaseId; attacks?
         <div className="lab-controls">
           <div className="lab-title">
             <h1>Attack Lab</h1>
-            <p>Can you get a transaction past {BRAND.name}? Pick what the agent declares, then slip something into the transaction it builds. Every change is a fresh evaluation by the engine.</p>
+            <p>Can you get a transaction past {BRAND.name}? Pick what the agent was asked to do, then play whoever builds its transaction: a payments API, a market maker, a tool. Every change is a fresh evaluation by the engine.</p>
           </div>
           <fieldset className="fieldset">
             <legend>Declared intent</legend>
@@ -474,10 +475,10 @@ function PolicyView() {
   const sol = Number(p.maxSolSpendLamports) / 1e9;
   const groups: { title: string; rules: { text: string; key: string; d: Decision }[] }[] = [
     {
-      title: "Payments",
+      title: "Payments and swaps",
       rules: [
         { text: `An agent may pay an approved recipient up to ${amount(p.reviewAbove)} ${usdc} per transaction on its own.`, key: `reviewAbove = ${p.reviewAbove}`, d: "ALLOW" },
-        { text: `Payments above ${amount(p.reviewAbove)} ${usdc} need a human.`, key: `reviewAbove = ${p.reviewAbove}`, d: "REVIEW" },
+        { text: `Payments and swaps above ${amount(p.reviewAbove)} ${usdc} need a human.`, key: `reviewAbove = ${p.reviewAbove}`, d: "REVIEW" },
         { text: `Payments above ${amount(p.maxPayAmount)} ${usdc} always need a human, even to an approved recipient. The limit is returned as advice; the transaction is never rewritten.`, key: `maxPayAmount = ${p.maxPayAmount}`, d: "REVIEW" },
         { text: "A first payment to a new recipient needs a human.", key: `newRecipientAction = ${p.newRecipientAction}`, d: p.newRecipientAction },
       ],
