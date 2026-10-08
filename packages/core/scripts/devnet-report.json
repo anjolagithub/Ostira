@@ -1,9 +1,10 @@
 {
   "cluster": "http://127.0.0.1:8899",
   "solanaCore": "2.2.20",
-  "ranAt": "2026-10-08T10:23:13.784Z",
-  "agent": "47AirDWa7fSzGsce6SB3MRadbqvvvdjzTr6wpWVFNCRQ",
-  "mint": "4Crqi9ZfmmsF9fL1gyNBEpGLp8u9zpLV8WF2f1N7aDYr",
+  "ranAt": "2026-10-08T10:29:15.986Z",
+  "mode": "full",
+  "agent": "3a2B5gatywBkJ8kEMR6Gu2e3oLAuuEbdp9RY9PmByBAJ",
+  "mint": "5LSAXnoArAReAAQqLPxeBpJirWcJiP6cPmRqKgPz1cRT",
   "passed": 10,
   "total": 10,
   "results": [
@@ -12,8 +13,8 @@
       "expected": "ALLOW",
       "decision": "ALLOW",
       "codes": [],
-      "slot": "1784",
-      "ms": 21,
+      "slot": "2660",
+      "ms": 18,
       "pass": true,
       "cpi": 0
     },
@@ -25,8 +26,8 @@
         "UNDECLARED_APPROVAL",
         "UNLIMITED_APPROVAL"
       ],
-      "slot": "1784",
-      "ms": 11,
+      "slot": "2660",
+      "ms": 8,
       "pass": true,
       "cpi": 0
     },
@@ -38,8 +39,8 @@
         "UNEXPECTED_ASSET_OUTFLOW",
         "UNEXPECTED_RECIPIENT"
       ],
-      "slot": "1784",
-      "ms": 10,
+      "slot": "2660",
+      "ms": 12,
       "pass": true,
       "cpi": 0
     },
@@ -50,8 +51,8 @@
       "codes": [
         "AMOUNT_MISMATCH"
       ],
-      "slot": "1784",
-      "ms": 8,
+      "slot": "2660",
+      "ms": 11,
       "pass": true,
       "cpi": 0
     },
@@ -62,8 +63,8 @@
       "codes": [
         "AUTHORITY_CHANGE"
       ],
-      "slot": "1784",
-      "ms": 12,
+      "slot": "2660",
+      "ms": 9,
       "pass": true,
       "cpi": 0
     },
@@ -75,8 +76,8 @@
         "SOL_SPEND_EXCEEDS_CAP",
         "UNEXPECTED_SOL_TRANSFER"
       ],
-      "slot": "1784",
-      "ms": 8,
+      "slot": "2660",
+      "ms": 13,
       "pass": true,
       "cpi": 0
     },
@@ -88,8 +89,8 @@
         "UNEXPECTED_RECIPIENT",
         "SUPPLY_CHANGE"
       ],
-      "slot": "1784",
-      "ms": 10,
+      "slot": "2660",
+      "ms": 8,
       "pass": true,
       "cpi": 0
     },
@@ -112,8 +113,8 @@
         "NEW_RECIPIENT",
         "AMOUNT_ABOVE_REVIEW_THRESHOLD"
       ],
-      "slot": "1784",
-      "ms": 15,
+      "slot": "2660",
+      "ms": 9,
       "pass": true,
       "cpi": 4
     },
@@ -122,14 +123,14 @@
       "expected": "ALLOW",
       "decision": "ALLOW",
       "codes": [],
-      "slot": "1784",
-      "ms": 10,
+      "slot": "2660",
+      "ms": 8,
       "pass": true,
       "cpi": 0
     }
   ],
   "sent": {
-    "signature": "fa3Jt3DNtzc3i632guRzJcFZXJTi59ZrWM8wnfEeJ4Bm979HKtUBTavkkEZVYLfC51ho31A4HKk9NSMZWAXFhLi",
+    "signature": "22u3Yyd6zDAnkrhzFrJBRy2RPPHx2dEcbhnwGLaZq6xmd2F4q5mpdj4aiyeqbwwkwVGsnw8iVLMmHN43uZS9n2jv",
     "aliceDelta": "500000000",
     "simulatedDelta": "500000000",
     "simulationMatchedExecution": true

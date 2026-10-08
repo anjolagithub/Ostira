@@ -74,7 +74,11 @@ function LiveRunCard({ run }: { run: LiveRun }) {
         <strong>Live cluster run: {run.passed}/{run.total} verdicts as expected</strong>
         <span className="faint">{clusterName(run.cluster)}, solana-core {run.solanaCore}, {dateTimeUtc(run.ranAt)}</span>
       </div>
-      <p>The same engine, evaluating real transactions through Solana RPC <code>simulateTransaction</code> against real chain state{cpi ? `, including a payment that creates a token account through ${cpi.cpi} CPI calls` : ""}.{run.sent.signature ? " Then the one transaction it allowed was signed and sent." : ""}</p>
+      {run.mode === "observe" ? (
+        <p>The same engine, evaluating transactions built against real Devnet wallets that already hold Devnet USDC, through Solana RPC <code>simulateTransaction</code>. Read-only: nothing was signed or sent, and no wallet was touched.</p>
+      ) : (
+        <p>The same engine, evaluating real transactions through Solana RPC <code>simulateTransaction</code> against real chain state{cpi ? `, including a payment that creates a token account through ${cpi.cpi} CPI calls` : ""}.{run.sent.signature ? " Then the one transaction it allowed was signed and sent." : ""}</p>
+      )}
       {run.sent.signature && (
         <dl className="live-facts">
           <div><dt>Simulated effect</dt><dd>+{usdc(run.sent.simulatedDelta)} USDC to Alice</dd></div>

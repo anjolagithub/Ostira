@@ -35,6 +35,8 @@ export interface Dataset {
 }
 
 export interface LiveRun {
+  /** full: the run created its own mint and sent the allowed transaction. observe: read-only against existing holders. */
+  mode?: "full" | "observe";
   cluster: string;
   solanaCore: string;
   ranAt: string;
