@@ -12,7 +12,7 @@ intent + unsigned tx → validate → decode → simulate → extract effect →
 
 - **Real execution.** Scenarios run on [LiteSVM](https://github.com/LiteSVM/litesvm) with the real SPL Token, Associated Token and System programs. Effects come from simulated account state, so a transfer or approval hidden inside a CPI is caught exactly like a top-level one.
 - **The hero case.** "Pay Alice 500 USDC" plus a hidden `approve(u64::MAX)` to an unknown wallet → `BLOCK`: the payment is exactly right, the undeclared unlimited allowance is not.
-- **Soundness sweep.** Every combination of 7 attacks across 6 intents, 474 real transactions, is blocked. Clean payments and limited approvals are allowed. Six token-level attacks (mint, burn, freeze, mint authority, close for rent, Token-2022) are blocked on every intent, 36 more. Verdicts are bound to the message hash and expire; see `verifyBeforeSigning`. `packages/core/test/verifier.test.ts` has 41 tests.
+- **Soundness sweep.** Every attack combination across the supported intents, 601 real attacked transactions (payments, a swap and approvals), is blocked. Clean payments and limited approvals are allowed. Six token-level attacks (mint, burn, freeze, mint authority, close for rent, Token-2022) are blocked on every intent, 36 more. Verdicts are bound to the message hash and expire; see `verifyBeforeSigning`. The core package has 55 tests (`verifier.test.ts` and `rpc-simulator.test.ts`).
 
 | Attack slipped into "Pay Alice 500 USDC" | Caught as |
 |---|---|
@@ -38,7 +38,7 @@ scripts         rename-brand.mjs: rename the product everywhere in one command
 
 ```bash
 npm install
-npm test            # engine tests, including the 474-transaction sweep
+npm test            # engine tests, including the 601-transaction sweep
 npm run demo        # prints every showcase verdict with reasons and stage timings
 npm run dev         # console at http://localhost:3000 (live engine behind /api/v1)
 ```
@@ -69,7 +69,7 @@ if (result.decision === "ALLOW") await wallet.signAndSend(tx);
 
 ## Moving to Devnet
 
-`RpcSimulator` implements the same interface as `LiteSvmSimulator` using `simulateTransaction` (`sigVerify: false`, `replaceRecentBlockhash: true`, `innerInstructions: true`, post-state for writable accounts) and `getMultipleAccounts` for pre-state. Point it at Devnet or Helius with `RPC_URL`. It hasn't been exercised against a live cluster from this build environment, which had no outbound RPC access, so run `npm test` first and then a Devnet smoke test.
+`RpcSimulator` implements the same interface as `LiteSvmSimulator` using `simulateTransaction` (`sigVerify: false`, `replaceRecentBlockhash: true`, `innerInstructions: true`, post-state for writable accounts) and `getMultipleAccounts` for pre-state. Point it at Devnet or Helius with `RPC_URL`. It has been run against live Devnet (see "Live cluster smoke test" below); run `npm test` first, then the smoke test with your own RPC.
 
 ## Rename
 
@@ -81,7 +81,7 @@ node scripts/rename-brand.mjs NewName && npm install
 
 ## Live cluster smoke test
 
-The same engine, over real Solana RPC (`simulateTransaction`) instead of LiteSVM. It creates a test mint and accounts, evaluates ten transactions (honest, attacked, CPI, Token-2022), then signs and sends the one it allowed and checks that the executed effect equals the simulated one.
+The same engine, over real Solana RPC (`simulateTransaction`) instead of LiteSVM. It creates a test mint and accounts, then evaluates nine transactions (honest, attacked, CPI, Token-2022) against live cluster state. When it runs in send mode it also signs and sends the one it allowed and checks that the executed effect equals the simulated one.
 
 ```bash
 cd packages/core
@@ -90,4 +90,6 @@ KEYPAIR=~/.config/solana/id.json npm run smoke             # Devnet with a funde
 RPC_URL=http://127.0.0.1:8899 npm run smoke                # a local solana-test-validator
 ```
 
-It writes `scripts/devnet-report.json`; the site shows the latest report in its proof section. The committed report is from a local Agave 2.2.20 validator: 10/10 verdicts as expected, and the executed transfer matched the simulation exactly. Run it on Devnet to replace it.
+It writes `scripts/devnet-report.json`; the site shows the latest report in its proof section.
+
+**What the committed report shows (Devnet, 2026-10-08, observe mode):** 9 of 9 verdicts matched what was expected, each evaluated against real cluster state. **What it does not show:** the send-and-compare step was skipped in that run (`sent: skipped`), so the claim that an executed transfer equals its simulation has not been verified on Devnet in this report. Run it with a funded `KEYPAIR` to cover that step.
