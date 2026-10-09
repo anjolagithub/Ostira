@@ -7,7 +7,7 @@
     "apps/*"
   ],
   "scripts": {
-    "test": "npm -w @ostira/core test",
+    "test": "npm -w @ostira/core test && npm -w @ostira/guard test",
     "demo": "npm -w @ostira/core run demo",
     "dev": "npm -w @ostira/web run dev",
     "build": "npm -w @ostira/web run build",

@@ -20,6 +20,6 @@ jobs:
       - name: Generate the preview dataset (engine output the static preview embeds)
         run: npm -w @ostira/web run data
       - name: Typecheck
-        run: npm -w @ostira/core run typecheck && npm -w @ostira/web run typecheck
+        run: npm -w @ostira/core run typecheck && npm -w @ostira/guard run typecheck && npm -w @ostira/web run typecheck
       - name: Build the web app
         run: npm run build

@@ -30,6 +30,7 @@ intent + unsigned tx → validate → decode → simulate → extract effect →
 
 ```
 packages/core   the engine: intent schema, simulator adapters, effect extraction, matcher, policy, Effect Diff, tests
+packages/guard  guardWallet: wrap an agent wallet so it only signs what the engine verified (Solana Agent Kit compatible)
 apps/web        Next.js 16 console: overview, console, Attack Lab, policy, and the /api/v1 routes
 scripts         rename-brand.mjs: rename the product everywhere in one command
 ```
@@ -66,6 +67,10 @@ verifier.setPolicy({ agentId: "treasury-agent", assets: { USDC: "<mint>" }, appr
 const result = await verifier.evaluate({ agentId: "treasury-agent", intent, transaction: { serialized } });
 if (result.decision === "ALLOW") await wallet.signAndSend(tx);
 ```
+
+## Guard an agent's wallet
+
+`@ostira/guard` wraps a Solana Agent Kit wallet (any wallet with `signTransaction` and `signAndSendTransaction`) so it only signs what Ostira has verified against a declared intent. See [`packages/guard`](packages/guard/README.md).
 
 ## Moving to Devnet
 
