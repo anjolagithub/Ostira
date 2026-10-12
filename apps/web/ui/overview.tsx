@@ -122,27 +122,28 @@ export function Overview() {
   return (
     <div className="page">
       {/* 1 + 2: hero, with the Effect Diff in the first viewport */}
-      <section className="hero">
-        <div className="hero-copy">
-          <h1>See what an agent&rsquo;s transaction would actually do before it&nbsp;signs.</h1>
-          <p className="hero-sub">{BRAND.name} simulates the transaction, compares its observable economic effects with the agent&rsquo;s declared intent, and blocks anything that doesn&rsquo;t match.</p>
-          <div className="hero-cta">
-            <NavLink to={{ page: "lab" }} className="btn btn-primary">Try to get an attack past it<ArrowRight size={14} aria-hidden="true" /></NavLink>
-            <NavLink to={{ page: "console", id: HERO_ID }} className="btn">Open the console</NavLink>
-          </div>
-          <ul className="hero-facts">
-            <li>Never holds private keys</li>
-            <li>Never broadcasts transactions</li>
-            <li>Deterministic rules, not a risk score</li>
-          </ul>
+      <section className="lhero">
+        <span className="lbadge"><i aria-hidden="true" />Intent verification for AI agents on Solana</span>
+        <h1>Check what the agent signs, <em className="serif">before&nbsp;it&nbsp;signs.</em></h1>
+        <p className="hero-sub">{BRAND.name} simulates the transaction, compares its observable economic effects with the agent&rsquo;s declared intent, and blocks anything that doesn&rsquo;t match.</p>
+        <div className="hero-cta">
+          <NavLink to={{ page: "lab" }} className="btn-glow">Try to get an attack past it<ArrowRight size={15} aria-hidden="true" /></NavLink>
+          <NavLink to={{ page: "console", id: HERO_ID }} className="btn-ghost">Open the console</NavLink>
         </div>
-        <HeroDiff entry={hero} />
+        <ul className="hero-facts">
+          <li>Never holds private keys</li>
+          <li>Never broadcasts transactions</li>
+          <li>Deterministic rules, not a risk score</li>
+        </ul>
       </section>
+      <div className="lshot">
+        <HeroDiff entry={hero} />
+      </div>
 
       {/* 3: how it works */}
-      <section className="block-sect">
+      <section className="block-sect" id="how">
         <header>
-          <h2>How it works</h2>
+          <h2>How it <em className="serif">works</em></h2>
           <p>Agents increasingly sign transactions they didn&rsquo;t build: a payments API&rsquo;s transfer, a market maker&rsquo;s swap quote, whatever a tool returns. {BRAND.name} checks those bytes against what the agent was asked to do. Below, the evaluation above, replayed step by step with the engine&rsquo;s own values and timings; only the pacing is slowed.</p>
         </header>
         <div className="how">
@@ -159,16 +160,16 @@ export function Overview() {
       {/* 4: attack lab CTA */}
       <section className="cta-band">
         <div>
-          <h2>Try to get an attack past it</h2>
+          <h2>Try to get an attack <em className="serif">past it</em></h2>
           <p>Pick an intent, slip attacks into the transaction, and watch the engine judge every combination.</p>
         </div>
         <NavLink to={{ page: "lab", base: "pay-alice", attacks: ["hiddenApproval"] }} className="btn btn-primary">Open the Attack Lab<ArrowRight size={14} aria-hidden="true" /></NavLink>
       </section>
 
       {/* 5: attack classes */}
-      <section className="block-sect">
+      <section className="block-sect" id="attacks">
         <header>
-          <h2>Seven attack classes, and six more at the token level</h2>
+          <h2>Seven attack classes, <em className="serif">and six more at the token level</em></h2>
           <p>Each row is the same honest payment, &ldquo;Pay Alice 500 USDC&rdquo;, with one behaviour slipped in by whoever built the transaction. Every class also runs against swaps and approvals. Verdicts and reasons are the engine&rsquo;s output.</p>
         </header>
         <div className="table-wrap">
@@ -184,7 +185,7 @@ export function Overview() {
       </section>
 
       {/* 6: proof */}
-      <section className="block-sect">
+      <section className="block-sect" id="proof">
         <div className="proof">
           <div className="proof-num">{d.sweep.blocked}/{d.sweep.total}<small>adversarial cases rejected</small></div>
           <div className="proof-copy">
@@ -199,7 +200,7 @@ export function Overview() {
       <section className="block-sect">
         <div className="split">
           <div className="split-col">
-            <h2>One call before the wallet signs</h2>
+            <h2>One call <em className="serif">before the wallet signs</em></h2>
             <p className="muted">Evaluate, check the verdict, then confirm you are signing the exact transaction that was evaluated.</p>
             <pre className="code">
 <span className="k">const</span> result = <span className="k">await</span> ostira.evaluate({"{"}{"\n"}
@@ -215,7 +216,7 @@ export function Overview() {
           </div>
           {/* 8: security guarantees */}
           <div className="split-col">
-            <h2>Security guarantees</h2>
+            <h2>Security <em className="serif">guarantees</em></h2>
             <ul className="guarantees">
               <li><strong>Never holds or asks for a private key</strong><span>It evaluates unsigned transactions. {BRAND.name}-integrated wallets sign only after ALLOW.</span></li>
               <li><strong>Binds the verdict to the exact transaction</strong><span>A verdict covers one message fingerprint for 30 seconds. Any change needs a new evaluation.</span></li>
@@ -230,7 +231,7 @@ export function Overview() {
       {/* 9: architecture */}
       <section className="block-sect">
         <header>
-          <h2>Agent, {BRAND.name}, wallet, chain</h2>
+          <h2>Agent, {BRAND.name}, wallet, <em className="serif">chain</em></h2>
           <p>{BRAND.name} sits between the agent and the wallet. The agent proposes, {BRAND.name} checks what the transaction would do, and only an ALLOW lets an integrated wallet sign and send it.</p>
         </header>
         <GateIllustration />

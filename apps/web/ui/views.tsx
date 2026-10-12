@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Command } from "cmdk";
-import { ArrowRight, CaretLeft, Desktop, MagnifyingGlass, Moon, Play, Sun } from "@phosphor-icons/react";
+import { ArrowRight, BookOpen, CaretLeft, CaretRight, Desktop, Flask, House, MagnifyingGlass, Moon, Play, Robot, ShieldCheck, Sliders, Sun } from "@phosphor-icons/react";
 import type { Decision } from "@ostira/core";
 import type { ScenarioEntry } from "@ostira/core/dataset";
 import { Logo } from "./brand-art";
@@ -37,6 +37,18 @@ function useTheme(): [Theme, (t: Theme) => void] {
 function ThemeIcon({ theme }: { theme: Theme }) {
   return theme === "dark" ? <Moon size={16} /> : theme === "light" ? <Sun size={16} /> : <Desktop size={16} />;
 }
+
+const SIDE: { group: string; items: { to: Route; label: string; page: Route["page"]; icon: typeof House }[] }[] = [
+  { group: "Verify", items: [
+    { to: { page: "console" }, label: "Console", page: "console", icon: ShieldCheck },
+    { to: { page: "lab" }, label: "Attack Lab", page: "lab", icon: Flask },
+  ] },
+  { group: "Configure", items: [{ to: { page: "policy" }, label: "Policy", page: "policy", icon: Sliders }] },
+  { group: "Learn", items: [
+    { to: { page: "docs" }, label: "Docs", page: "docs", icon: BookOpen },
+    { to: { page: "overview" }, label: "Overview", page: "overview", icon: House },
+  ] },
+];
 
 const NAV: { to: Route; label: string; page: Route["page"] }[] = [
   { to: { page: "overview" }, label: "Overview", page: "overview" },
@@ -110,45 +122,120 @@ export function Shell() {
   useEffect(() => { window.scrollTo({ top: 0 }); }, [nav.route.page]);
 
   const nextTheme: Record<Theme, Theme> = { system: "light", light: "dark", dark: "system" };
-  return (
-    <div className="shell">
-      <a href="#main" className="skip">Skip to content</a>
-      <header className="topbar">
-        <NavLink to={{ page: "overview" }} className="brand" aria-label={`${BRAND.name} home`}><Logo height={22} /></NavLink>
-        <nav className="nav" aria-label="Main">
-          {NAV.map((n) => (
-            <NavLink key={n.page} to={n.to} aria-current={nav.route.page === n.page ? "page" : undefined}>{n.label}</NavLink>
-          ))}
-        </nav>
-        <div className="topbar-actions">
-          <span className="mode-pill hide-sm" data-mode={mode} title={mode === "live" ? "Evaluations run on the engine as you click" : "Every evaluation was produced by the engine and saved into this page"}>
-            <i />{mode === "live" ? "Engine: live" : "Engine: snapshot"}
-          </span>
-          <DemoMenu />
-          <button className="icon-btn" onClick={() => setCmdOpen(true)} aria-label="Search and jump (Command K)">
-            <MagnifyingGlass size={15} aria-hidden="true" />
-            <span className="kbd hide-sm">⌘K</span>
-          </button>
-          <button className="icon-btn" onClick={() => setTheme(nextTheme[theme])} aria-label={`Theme: ${theme}. Switch to ${nextTheme[theme]}`} title={`Theme: ${theme}`}>
-            <ThemeIcon theme={theme} />
-          </button>
-        </div>
-      </header>
-      {error ? (
-        <div className="page"><div className="empty-state" data-decision="BLOCK"><strong>Engine unreachable</strong><p>Evaluations could not be loaded: {error}. Nothing can be verified until the API responds. Check that it is running, then reload.</p></div></div>
-      ) : !dataset ? (
-        <div className="loading"><Verifying /></div>
-      ) : (
-        <main id="main">
-          {nav.route.page === "overview" && <Overview />}
-          {nav.route.page === "console" && <ConsoleView id={nav.route.id} />}
-          {nav.route.page === "lab" && <LabView base={nav.route.base} attacks={nav.route.attacks} />}
-          {nav.route.page === "policy" && <PolicyView />}
-          {nav.route.page === "docs" && <DocsView />}
-        </main>
-      )}
+  const landing = nav.route.page === "overview";
+  const here = NAV.find((n) => n.page === nav.route.page)?.label ?? "";
+  const body = error ? (
+    <div className="page"><div className="empty-state" data-decision="BLOCK"><strong>Engine unreachable</strong><p>Evaluations could not be loaded: {error}. Nothing can be verified until the API responds. Check that it is running, then reload.</p></div></div>
+  ) : !dataset ? (
+    <div className="loading"><Verifying /></div>
+  ) : (
+    <main id="main">
+      {nav.route.page === "overview" && <Overview />}
+      {nav.route.page === "console" && <ConsoleView id={nav.route.id} />}
+      {nav.route.page === "lab" && <LabView base={nav.route.base} attacks={nav.route.attacks} />}
+      {nav.route.page === "policy" && <PolicyView />}
+      {nav.route.page === "docs" && <DocsView />}
+    </main>
+  );
+  const modePill = (
+    <span className="mode-pill" data-mode={mode} title={mode === "live" ? "Evaluations run on the engine as you click" : "Every evaluation was produced by the engine and saved into this page"}>
+      <i />{mode === "live" ? "Engine: live" : "Engine: snapshot"}
+    </span>
+  );
+  const searchBtn = (
+    <button className="icon-btn" onClick={() => setCmdOpen(true)} aria-label="Search and jump (Command K)">
+      <MagnifyingGlass size={15} aria-hidden="true" />
+      <span className="kbd hide-sm">⌘K</span>
+    </button>
+  );
+  const themeBtn = (
+    <button className="icon-btn" onClick={() => setTheme(nextTheme[theme])} aria-label={`Theme: ${theme}. Switch to ${nextTheme[theme]}`} title={`Theme: ${theme}`}>
+      <ThemeIcon theme={theme} />
+    </button>
+  );
+
+  const overlays = (
+    <>
       {cmdOpen && dataset && <CommandMenu onClose={() => setCmdOpen(false)} setTheme={setTheme} />}
       {toast && <div className="toast" role="status" key={toast.id}>{toast.text}</div>}
+    </>
+  );
+
+  if (landing) {
+    return (
+      <div className="shell landing">
+        <a href="#main" className="skip">Skip to content</a>
+        <header className="lnav-wrap">
+          <div className="lnav">
+            <NavLink to={{ page: "overview" }} className="brand" aria-label={`${BRAND.name} home`}><Logo height={20} /></NavLink>
+            <nav className="lnav-links hide-sm" aria-label="Main">
+              <a href="#how">How it works</a>
+              <a href="#attacks">Attacks</a>
+              <a href="#proof">Proof</a>
+              <NavLink to={{ page: "docs" }}>Docs</NavLink>
+            </nav>
+            <NavLink to={{ page: "console", id: HERO_ID }} className="btn-glow btn-glow-sm">Open the console<ArrowRight size={13} aria-hidden="true" /></NavLink>
+          </div>
+        </header>
+        {body}
+        {overlays}
+      </div>
+    );
+  }
+
+  return (
+    <div className="shell app">
+      <a href="#main" className="skip">Skip to content</a>
+      <aside className="side" aria-label="Sections">
+        <div className="side-head">
+          <NavLink to={{ page: "overview" }} className="brand" aria-label={`${BRAND.name} home`}><Logo height={22} /></NavLink>
+        </div>
+        <div className="side-body">
+          <div className="side-org">
+            <span className="side-org-icon"><Robot size={16} weight="bold" aria-hidden="true" /></span>
+            <span><b>treasury-agent</b><small>Demo agent on Solana</small></span>
+          </div>
+          {SIDE.map((g) => (
+            <div key={g.group} className="side-group">
+              <p>{g.group}</p>
+              {g.items.map((n) => {
+                const Icon = n.icon;
+                const on = nav.route.page === n.page;
+                return (
+                  <NavLink key={n.page} to={n.to} className="side-link" aria-current={on ? "page" : undefined}>
+                    <Icon size={18} weight={on ? "fill" : "regular"} aria-hidden="true" />{n.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="side-foot">
+          {modePill}
+          <div className="side-tools">{searchBtn}{themeBtn}</div>
+        </div>
+      </aside>
+      <div className="app-main">
+        <header className="topbar">
+          <NavLink to={{ page: "overview" }} className="brand app-brand-sm" aria-label={`${BRAND.name} home`}><Logo height={20} /></NavLink>
+          <nav className="crumbs hide-sm" aria-label="Breadcrumb">
+            <span>{BRAND.name}</span><CaretRight size={12} aria-hidden="true" /><b>{here}</b>
+          </nav>
+          <nav className="nav app-nav-sm" aria-label="Main">
+            {NAV.map((n) => (
+              <NavLink key={n.page} to={n.to} aria-current={nav.route.page === n.page ? "page" : undefined}>{n.label}</NavLink>
+            ))}
+          </nav>
+          <div className="topbar-actions">
+            <span className="app-sm-only">{modePill}</span>
+            <DemoMenu />
+            <span className="app-sm-only">{searchBtn}</span>
+            <span className="app-sm-only">{themeBtn}</span>
+          </div>
+        </header>
+        {body}
+      </div>
+      {overlays}
     </div>
   );
 }
