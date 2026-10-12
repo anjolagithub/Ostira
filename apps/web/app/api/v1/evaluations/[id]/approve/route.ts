@@ -1,8 +1,10 @@
-import { engine, fail, json } from "@/lib/server";
+import { engine, fail, json, requireAdmin } from "@/lib/server";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     const { id } = await ctx.params;
     const body = await req.json().catch(() => ({}));

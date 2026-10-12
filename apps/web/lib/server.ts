@@ -39,6 +39,17 @@ export function json(data: unknown, status = 200) {
   return Response.json(toJson(data), { status, headers: { "cache-control": "no-store" } });
 }
 
+/**
+ * Mutating routes (replace a policy, resolve a REVIEW) are off unless OSTIRA_ADMIN_TOKEN is set,
+ * and then need `Authorization: Bearer <token>`. The public demo leaves it unset, so they return 403.
+ */
+export function requireAdmin(req: Request): Response | null {
+  const token = process.env.OSTIRA_ADMIN_TOKEN;
+  if (!token) return Response.json({ error: "Disabled on the public demo. Set OSTIRA_ADMIN_TOKEN to enable." }, { status: 403 });
+  if (req.headers.get("authorization") !== `Bearer ${token}`) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  return null;
+}
+
 export function fail(e: unknown) {
   const status = (e as { status?: number }).status ?? 500;
   return Response.json({ error: (e as Error).message ?? String(e) }, { status });

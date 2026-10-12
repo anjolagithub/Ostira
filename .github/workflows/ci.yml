@@ -15,7 +15,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Engine tests (LiteSVM, 474 + 36 adversarial transactions)
+      - name: Engine tests (LiteSVM adversarial sweep)
         run: npm test
       - name: Generate the preview dataset (engine output the static preview embeds)
         run: npm -w @ostira/web run data

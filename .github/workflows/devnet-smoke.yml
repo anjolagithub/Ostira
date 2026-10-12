@@ -1,7 +1,8 @@
 name: Devnet smoke test
 
-# The same engine over real Solana RPC: evaluates ten transactions against live Devnet state,
-# then signs and sends the one it allowed and checks the executed effect equals the simulated one.
+# The same engine over real Solana RPC: evaluates nine transactions against live Devnet state.
+# With a funded DEVNET_KEYPAIR it then signs and sends the one it allowed and checks the executed effect equals the
+# simulated one; without it the run is observe-only and that step is skipped.
 # The report is committed to packages/core/scripts/devnet-report.json, which the site shows.
 
 on:

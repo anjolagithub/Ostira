@@ -24,7 +24,7 @@ intent + unsigned tx → validate → decode → simulate → extract effect →
 | SOL drain | `UNEXPECTED_SOL_TRANSFER`, `SOL_SPEND_EXCEEDS_CAP` |
 | Unapproved program | `UNKNOWN_PROGRAM` |
 
-**Bounded claim.** Ostira verifies the effects it can deterministically observe: SPL token balances, allowances (delegates), account authorities and closures, SOL movements and every program invoked, outer or CPI. Supported intents today are `PAY` and `APPROVE`. Transactions using address lookup tables are blocked rather than guessed at.
+**Bounded claim.** Ostira verifies the effects it can deterministically observe: SPL token balances, allowances (delegates), account authorities and closures, SOL movements and every program invoked, outer or CPI. Supported intents today are `PAY`, `SWAP` and `APPROVE`. Transactions using address lookup tables are blocked rather than guessed at.
 
 ## Repo
 
@@ -52,9 +52,9 @@ npm run dev         # console at http://localhost:3000 (live engine behind /api/
 |---|---|---|
 | POST | `/api/v1/evaluate` | `{ agentId, intent, transaction: { serialized } }` → evaluation. Dry run only. |
 | GET | `/api/v1/evaluations/:id` | Evaluation record, plus any human resolution |
-| POST | `/api/v1/evaluations/:id/approve` | Resolve a `REVIEW` (recorded, original result never mutated) |
+| POST | `/api/v1/evaluations/:id/approve` | Resolve a `REVIEW` (recorded, original result never mutated). Needs `Authorization: Bearer $OSTIRA_ADMIN_TOKEN`; returns 403 on the public demo. |
 | POST | `/api/v1/evaluations/:id/reject` | |
-| GET / PUT | `/api/v1/policies/:agentId` | Read or replace an agent's policy; every decision records its version hash |
+| GET / PUT | `/api/v1/policies/:agentId` | Read or replace an agent's policy; every decision records its version hash. `PUT` needs the same admin token and is 403 on the public demo. |
 | POST | `/api/v1/lab` | `{ base, attacks[] }` → build and evaluate a demo transaction |
 
 ```ts
@@ -86,7 +86,7 @@ node scripts/rename-brand.mjs NewName && npm install
 
 ## Live cluster smoke test
 
-The same engine, over real Solana RPC (`simulateTransaction`) instead of LiteSVM. It creates a test mint and accounts, then evaluates nine transactions (honest, attacked, CPI, Token-2022) against live cluster state. When it runs in send mode it also signs and sends the one it allowed and checks that the executed effect equals the simulated one.
+The same engine, over real Solana RPC (`simulateTransaction`) instead of LiteSVM. With a funded wallet it creates a test mint and accounts; without one (the Devnet faucet is often rate-limited) it runs in observe mode against existing Devnet token accounts, with amounts scaled down and nothing signed. It evaluates nine transactions (honest, attacked, CPI, Token-2022) against live cluster state. When it runs in send mode it also signs and sends the one it allowed and checks that the executed effect equals the simulated one.
 
 ```bash
 cd packages/core

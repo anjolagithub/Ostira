@@ -1,5 +1,5 @@
 import { policyVersion } from "@ostira/core";
-import { engine, fail, json } from "@/lib/server";
+import { engine, fail, json, requireAdmin } from "@/lib/server";
 
 export const runtime = "nodejs";
 
@@ -10,6 +10,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ agentId: strin
 }
 
 export async function PUT(req: Request, ctx: { params: Promise<{ agentId: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   try {
     const { agentId } = await ctx.params;
     const body = await req.json();
