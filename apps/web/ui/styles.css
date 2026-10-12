@@ -752,11 +752,11 @@ details.logs pre { margin: 10px 0 0; max-height: 280px; overflow: auto; padding:
 .policy-version .pv { display: flex; align-items: center; gap: 8px; font-size: var(--t-16); font-weight: 600; }
 
 /* docs */
-.docs { display: grid; gap: 40px; max-width: 860px; }
+.docs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; max-width: 860px; min-width: 0; }
 .docs-head { display: grid; gap: 8px; }
 .docs-head h1 { font-size: var(--t-32); letter-spacing: -0.03em; }
 .docs-head p { font-size: var(--t-16); max-width: 62ch; }
-.docs section { display: grid; gap: 12px; }
+.docs section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .docs h2 { font-size: var(--t-20); letter-spacing: -0.02em; }
 .docs p { color: var(--ink-2); max-width: 70ch; }
 .docs p code, .docs li code, .endpoints dd code { font-family: var(--font-mono); font-stretch: 87%; font-size: 0.82em; padding: 1px 5px; border-radius: 4px; background: var(--sunken); border: 1px solid var(--rule); color: var(--ink); }
