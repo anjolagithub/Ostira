@@ -6,3 +6,6 @@ node_modules
 apps/web/dist-preview
 apps/web/preview/dataset.json
 .env*
+
+# written by next build
+apps/web/AGENTS.md
